@@ -9,12 +9,13 @@ pub fn try_handshake(target: &str) -> Result<()> {
     )?;
     stream.set_read_timeout(Some(Duration::from_secs(15)))?;
     let version_msg = create_version_message(target, START_HEIGHT, PROTOCOL_VERSION, false)?;
+    
     send_message(&mut stream, &version_msg)?;
-    println!("Sent version message to {}", target);
+    tracing::info!("Sent version message to {}", target);
     let mut received_version = false;
     let mut received_verack = false;
     let start_time = SystemTime::now();
-    let timeout = Duration::from_secs(30); // Total handshake timeout
+    let timeout = Duration::from_secs(20); // Total handshake timeout
     while !received_version || !received_verack {
         if SystemTime::now()
             .duration_since(start_time)
@@ -24,14 +25,14 @@ pub fn try_handshake(target: &str) -> Result<()> {
             anyhow::bail!("Handshake timed out after {:?}", timeout);
         }
         let msg = receive_message(&mut stream)?;
-        println!("Received {} from {}", msg.command, target);
+        tracing::warn!("Received {} from {}", msg.command, target);
         match msg.command.as_str() {
             "version" => {
                 if !received_version {
                     received_version = true;
                     let verack_msg = create_verack_message();
                     send_message(&mut stream, &verack_msg)?;
-                    println!("Sent verack to {}", target);
+                    tracing::trace!("Sent verack to {}", target);
                 }
             }
             "verack" => {
@@ -40,14 +41,14 @@ pub fn try_handshake(target: &str) -> Result<()> {
             "wtxidrelay" => {
                 let wtxidrelay_msg = create_wtxidrelay_message();
                 send_message(&mut stream, &wtxidrelay_msg)?;
-                println!("Sent wtxidrelay to {}", target);
+                tracing::info!("Sent wtxidrelay to {}", target);
             }
             _ => {
-                println!("Ignored message: {}", msg.command);
+                tracing::info!("Ignored message: {}", msg.command);
             }
         }
         if received_version && received_verack {
-            println!("Handshake successful with {}", target);
+            tracing::info!("Handshake successful with {}", target);
             return Ok(());
         }
     }

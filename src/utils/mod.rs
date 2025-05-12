@@ -4,6 +4,9 @@ pub mod calculate_checksum;
 pub mod receive_msg;
 
 pub mod serialize_net_add;
+pub mod hand_logger;
+
+pub use hand_logger::*;
 
 pub use calculate_checksum::*;
 

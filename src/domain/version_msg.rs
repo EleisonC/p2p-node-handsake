@@ -15,7 +15,7 @@ pub fn create_version_message(
         return Err(anyhow::anyhow!("start_height must be non-negative"));
     }
     if protocol_version < 70001 && relay {
-        println!("Warning: relay field included but protocol_version {} < 70001", protocol_version);
+        tracing::error!("Warning: relay field included but protocol_version {} < 70001", protocol_version);
     }
     let target_addr = target_node
         .to_socket_addrs()
