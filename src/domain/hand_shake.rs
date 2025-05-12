@@ -15,7 +15,7 @@ pub fn try_handshake(target: &str) -> Result<()> {
     let mut received_version = false;
     let mut received_verack = false;
     let start_time = SystemTime::now();
-    let timeout = Duration::from_secs(20); // Total handshake timeout
+    let timeout = Duration::from_secs(15); // Total handshake timeout
     while !received_version || !received_verack {
         if SystemTime::now()
             .duration_since(start_time)

@@ -100,7 +100,8 @@ impl HandTool {
                         };
                         tracing::warn!("Attempt {} failed: {}. Retrying...", attempts, err_msg);
                         if attempts == max_handshake_attempts {
-                            tracing::error!("Failed to handshake with {} after {} attempts", peer, attempts);
+                            tracing::error!("Failed to handshake with {} after {} attempts \n
+                            ", peer, attempts);
                         }
                         std::thread::sleep(Duration::from_secs(2));
                     }
