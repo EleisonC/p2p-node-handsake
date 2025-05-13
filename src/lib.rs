@@ -11,7 +11,7 @@ use utils::*;
 
 
 pub const TESTNET_MAGIC: u32 = 0x0B110907;
-pub const PROTOCOL_VERSION: i32 = 70228; // Bitcoin Core v25.0
+pub const PROTOCOL_VERSION: i32 = 70228;
 pub const START_HEIGHT: i32 = 2_600_000;
 
 // Service identifiers

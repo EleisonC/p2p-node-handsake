@@ -3,7 +3,11 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use anyhow::{Context, Result};
 use byteorder::{BigEndian, WriteBytesExt};
 use rand::Rng;
-use super::*;
+use crate::{
+    Message, calculate_checksum,
+    serialize_network_address, TESTNET_MAGIC, 
+    NODE_NETWORK, NODE_WITNESS, NODE_NETWORK_LIMITED
+};
 
 pub fn create_version_message(
     target_node: &str,
