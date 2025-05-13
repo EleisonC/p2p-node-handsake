@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 use std::io::{ErrorKind, Error};
 use anyhow::Result;
+use futures::future::join_all;
 
 pub mod domain;
 pub mod utils;
@@ -85,8 +86,8 @@ impl HandTool {
             let peer = peer.clone();
             let task = tokio::spawn(async move {
                 let mut attempts = 0;
+                tracing::info!("Attempting handshake with peer: {}", peer);
                 while attempts < max_handshake_attempts {
-                    tracing::info!("Attempting handshake with peer: {}", peer);
                     match try_handshake(&peer).await {
                         Ok(()) => return Ok(()),
                         Err(e) => {
@@ -96,7 +97,6 @@ impl HandTool {
                                     ErrorKind::ConnectionRefused => "Connection refused".to_string(),
                                     ErrorKind::ConnectionReset => "Connection reset by peer".to_string(),
                                     ErrorKind::TimedOut => "Connection timed out".to_string(),
-                                    ErrorKind::NetworkUnreachable => "Network is unreachable".to_string(),
                                     _ => format!("IO error: {}", io_err),
                                 },
                                 None => e.to_string(),
@@ -106,7 +106,7 @@ impl HandTool {
                                 tracing::error!("Failed to handshake with {} after {} attempts", peer, attempts);
                                 return Err(anyhow::anyhow!("Failed to handshake with {}", peer));
                             }
-                            tokio::time::sleep(Duration::from_secs(1)).await;
+                            // tokio::time::sleep(Duration::from_millis(500)).await;
                         }
                     }
                 }
@@ -116,8 +116,9 @@ impl HandTool {
         }
 
         // Wait for all tasks to complete and collect results
-        for task in tasks {
-            task.await??; // Propagate errors from tasks
+        let results = join_all(tasks).await;
+        for result in results {
+            result??; // Propagate errors
         }
 
         Ok(())

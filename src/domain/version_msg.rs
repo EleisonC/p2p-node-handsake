@@ -5,7 +5,7 @@ use byteorder::{BigEndian, WriteBytesExt};
 use rand::Rng;
 use crate::{
     Message, calculate_checksum,
-    serialize_network_address, TESTNET_MAGIC, 
+    serialize_network_address, TESTNET_MAGIC,
     NODE_NETWORK, NODE_WITNESS, NODE_NETWORK_LIMITED
 };
 

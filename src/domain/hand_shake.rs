@@ -2,11 +2,15 @@ use std::net::{ToSocketAddrs};
 use tokio::net::TcpStream;
 use anyhow::{Context, Result};
 use tokio::io::AsyncWriteExt;
+use tokio::time::timeout;
 use super::*;
 pub async fn try_handshake(target: &str) -> Result<()> {
-    let mut stream = TcpStream::connect(
-        &target.to_socket_addrs()?.next().context("Invalid address")?
-    ).await?;
+    let connect_timeout = Duration::from_millis(1000); // Adjust as needed
+    let mut stream = timeout(
+        connect_timeout,
+        TcpStream::connect(&target.to_socket_addrs()?.next().context("Invalid address")?)
+    ).await.context("Connection timed out")??;
+
 
     let version_msg = create_version_message(target, START_HEIGHT, PROTOCOL_VERSION, false)?;
     

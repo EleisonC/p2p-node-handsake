@@ -47,6 +47,7 @@ pub async fn receive_message(stream: &mut TcpStream) -> Result<Message> {
     if magic != TESTNET_MAGIC {
         anyhow::bail!("Invalid magic: {:x}", magic);
     }
+
     let calculated_checksum = calculate_checksum(&payload);
     if header_checksum != calculated_checksum {
         anyhow::bail!("Checksum mismatch");
