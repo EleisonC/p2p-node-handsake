@@ -28,6 +28,12 @@ pub struct Message {
     pub checksum: [u8; 4],
 }
 
+pub enum BTCommand {
+    Version,
+    Verack,
+    Wtxidrelay
+}
+
 #[derive(Debug)]
 pub struct HandTool {
     pub node_list: HashSet<String>,
@@ -54,7 +60,7 @@ impl HandTool {
         }
     }
 
-    pub fn add_node(&mut self, node: &String) {
+    pub fn add_node(&mut self, node: String) {
         self.node_list.insert(node.to_string());
     }
 

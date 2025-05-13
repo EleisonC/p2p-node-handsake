@@ -1,24 +1,24 @@
 # Bitcoin Testnet3 P2P Node Handshake
 
 ## Overview
-This project enables a handshake with Bitcoin Testnet3 nodes to establish a connection for testing purposes. It provides a Rust-based implementation that can be run natively with Cargo or inside a Docker container.
+This project implements a Rust-based tool to perform asynchronous handshakes with Bitcoin Testnet3 nodes using the Tokio runtime. It establishes connections for testing purposes, allowing users to connect to predefined or custom Testnet3 nodes.
 
 ## Requirements
-- **Rust**: Install via [rustup](https://rustup.rs/) (required for non-Docker usage).
-- **Docker**: Install [Docker](https://docs.docker.com/get-docker/) (required for Docker usage).
+- **Rust**: Install via [rustup](https://rustup.rs/) (required for running the project).
 - **Internet Connection**: Necessary for communicating with Testnet3 nodes.
-- **Operating System**: Linux or a compatible OS.
+- **Operating System**: Linux, macOS, or any OS compatible with Rust and Tokio.
 - **Testnet3 Nodes**: Access to public Bitcoin Testnet3 nodes, such as:
-   - `testnet-seed.bitcoin.jonasschnelli.ch:18333`
-   - `seed.testnet.bitcoin.sprovoost.nl:18333`
+    - `testnet-seed.bitcoin.jonasschnelli.ch:18333`
+    - `seed.testnet.bitcoin.sprovoost.nl:18333`
+- **Optional - Docker**: Install [Docker](https://docs.docker.com/get-docker/) for containerized execution.
 
 ## Pre-Setup
 1. **Default Testnet3 Nodes**:
-   - `testnet-seed.bitcoin.jonasschnelli.ch:18333`
-   - `seed.testnet.bitcoin.sprovoost.nl:18333`
+    - `testnet-seed.bitcoin.jonasschnelli.ch:18333`
+    - `seed.testnet.bitcoin.sprovoost.nl:18333`
 
 2. **Alternative Nodes**:
-   - If default nodes are unreachable, use any publicly available Bitcoin Testnet3 node.
+    - If default nodes are unreachable, you can add custom Bitcoin Testnet3 nodes (see "Adding a New Node").
 
 ## Setup
 1. Clone the repository:
@@ -33,11 +33,11 @@ This project enables a handshake with Bitcoin Testnet3 nodes to establish a conn
 ## Running Options
 
 ### Option 1: Using Cargo
-Run the program with:
-```bash
-cargo run
-```
-This command builds the project (on the first run) and performs the handshake with the configured Testnet3 nodes.
+1. Run the program with:
+    ```bash
+    cargo run
+    ```
+This command builds the project (on the first run) and performs handshakes with the configured Testnet3 nodes. The program attempts to connect to each node up to 3 times, as specified in `main.rs`.
 
 ### Option 2: Using Docker
 1. Build the Docker image:
@@ -48,19 +48,45 @@ This command builds the project (on the first run) and performs the handshake wi
    ```bash
    docker run --rm p2p-node-handshake
    ```
-This executes the handshake process inside a Docker container, connecting to the default Testnet3 nodes. The `--rm` flag ensures the container is removed after execution.
+This executes the handshake process inside a Docker container, connecting to the configured Testnet3 nodes. The `--rm` flag ensures the container is removed after execution.
 
 **Note**: Ensure Docker is running and you have an active internet connection. The Docker image includes all dependencies, so Rust does not need to be installed locally.
 
 ## Verification
-The program attempts to perform a handshake with Bitcoin Testnet3 nodes. Check the output for:
+The program attempts to perform a handshake with each configured Bitcoin Testnet3 node. Check the console output for:
 - **Success**:
   ```
-  INFO: Handshake successful with testnet-seed.bitcoin.jonasschnelli.ch:18333
+  INFO: Attempting handshake with peer: testnet-seed.bitcoin.jonasschnelli.ch:18333
   ```
+  (Followed by no error messages, indicating a successful handshake.)
 - **Failure**:
   ```
   ERROR: Failed to handshake with seed.testnet.bitcoin.sprovoost.nl:18333 after 3 attempts
   ```
 
-Ensure the listed peers (e.g., `testnet-seed.bitcoin.jonasschnelli.ch:18333`) are reachable. If issues persist, try alternative Testnet3 nodes.
+If a handshake fails, ensure the node is reachable and supports Bitcoin Testnet3. Try adding alternative nodes as described in "Adding a New Node."
+
+## Adding a New Node
+To connect to a custom Bitcoin Testnet3 node, modify the `main.rs` file to add the node to the `HandTool` instance:
+
+1. Open `src/main.rs` in a text editor.
+2. Modify the code to add a new node using `tool.add_node()`. For example, to add `new-node.example.com:18333`:
+   ```rust
+   use anyhow::Result;
+   use p2p_node_handshake::{HandTool, utils};
+
+   #[tokio::main]
+   async fn main() -> Result<()> {
+       utils::hand_logger::init_logger();
+       let mut tool = HandTool::default();
+
+       // Add a new node
+       tool.add_node("new-node.example.com:18333".to_string());
+
+       tool.set_max_handshake_attempts(3);
+       tool.perform_handshake().await
+   }
+   ```
+3. Save the file and run the program as described in "Running Options."
+
+**Note**: Ensure the new node is a valid Bitcoin Testnet3 node. You can find public nodes through community resources or run your own Testnet3 node using Bitcoin Core. The project does not currently support configuration files or command-line arguments for node addition.
