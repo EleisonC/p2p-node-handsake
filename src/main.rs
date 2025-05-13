@@ -1,9 +1,12 @@
 use anyhow::Result;
-use p2p_node_handshake::{HandTool, utils};
+use p2p_node_handshake::{
+    HandTool,
+    utils::hand_logger::init_logger
+};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    utils::hand_logger::init_logger();
+    init_logger();
     let mut tool = HandTool::default();
 
     tool.set_max_handshake_attempts(3);
