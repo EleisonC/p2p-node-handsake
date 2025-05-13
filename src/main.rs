@@ -1,7 +1,8 @@
 use anyhow::Result;
 use p2p_node_handshake::{HandTool, utils};
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     utils::hand_logger::init_logger();
     tracing::info!("Welcome to the Handshake");
     tracing::info!("Pre configure with two Testnet Bitcoin public nodes:\
@@ -10,7 +11,7 @@ fn main() -> Result<()> {
         Default number of handshake attempts is 2
     ");
     let mut tool = HandTool::default();
-    
+
     tool.set_max_handshake_attempts(3);
-    tool.perform_handshake()
+    tool.perform_handshake().await
 }

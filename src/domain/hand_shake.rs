@@ -1,21 +1,23 @@
-use std::net::{TcpStream, ToSocketAddrs};
+use std::net::{ToSocketAddrs};
+use tokio::net::TcpStream;
 use std::time::{Duration, SystemTime};
 use anyhow::{Context, Result};
+use tokio::io::AsyncWriteExt;
 use super::*;
-pub fn try_handshake(target: &str) -> Result<()> {
-    let mut stream = TcpStream::connect_timeout(
-        &target.to_socket_addrs()?.next().context("Invalid address")?,
-        Duration::from_secs(10),
-    )?;
-    stream.set_read_timeout(Some(Duration::from_secs(15)))?;
+pub async fn try_handshake(target: &str) -> Result<()> {
+    let mut stream = TcpStream::connect(
+        &target.to_socket_addrs()?.next().context("Invalid address")?
+    ).await?;
+
     let version_msg = create_version_message(target, START_HEIGHT, PROTOCOL_VERSION, false)?;
     
-    send_message(&mut stream, &version_msg)?;
+    let buff = send_message(&version_msg)?;
+    stream.write_all(&buff).await?;
     tracing::info!("Sent version message to {}", target);
     let mut received_version = false;
     let mut received_verack = false;
     let start_time = SystemTime::now();
-    let timeout = Duration::from_secs(15); // Total handshake timeout
+    let timeout = Duration::from_secs(5); // Total handshake timeout
     while !received_version || !received_verack {
         if SystemTime::now()
             .duration_since(start_time)
@@ -24,14 +26,15 @@ pub fn try_handshake(target: &str) -> Result<()> {
         {
             anyhow::bail!("Handshake timed out after {:?}", timeout);
         }
-        let msg = receive_message(&mut stream)?;
+        let msg = receive_message(&mut stream).await?;
         tracing::warn!("Received {} from {}", msg.command, target);
         match msg.command.as_str() {
             "version" => {
                 if !received_version {
                     received_version = true;
                     let verack_msg = create_verack_message();
-                    send_message(&mut stream, &verack_msg)?;
+                    let buff = send_message(&verack_msg)?;
+                    stream.write_all(&buff).await?;
                     tracing::trace!("Sent verack to {}", target);
                 }
             }
@@ -40,7 +43,8 @@ pub fn try_handshake(target: &str) -> Result<()> {
             }
             "wtxidrelay" => {
                 let wtxidrelay_msg = create_wtxidrelay_message();
-                send_message(&mut stream, &wtxidrelay_msg)?;
+                let buff = send_message(&wtxidrelay_msg)?;
+                stream.write_all(&buff).await?;
                 tracing::info!("Sent wtxidrelay to {}", target);
             }
             _ => {

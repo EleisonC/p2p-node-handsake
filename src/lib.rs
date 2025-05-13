@@ -76,39 +76,50 @@ impl HandTool {
         self.max_handshake_attempts = max_handshake_attempts;
     }
 
-    pub fn perform_handshake(&self) -> Result<()> {
-        let peers = self.get_nodes();
+    pub async fn perform_handshake(&self) -> Result<()> {
+        let peers = self.get_nodes().clone();
         let max_handshake_attempts = self.get_max_handshake_attempts();
 
+        let mut tasks = Vec::new();
         for peer in peers.iter() {
-            tracing::info!("Attempting handshake with peer: {}", peer);
-            let mut attempts = 0;
-            while attempts < max_handshake_attempts {
-                match try_handshake(peer) {
-                    Ok(()) => break,
-                    Err(e) => {
-                        attempts += 1;
-                        let err_msg = match e.downcast_ref::<Error>() {
-                            Some(io_err) => match io_err.kind() {
-                                ErrorKind::ConnectionRefused => "Connection refused".to_string(),
-                                ErrorKind::ConnectionReset => "Connection reset by peer".to_string(),
-                                ErrorKind::TimedOut => "Connection timed out".to_string(),
-                                ErrorKind::NetworkUnreachable => "Network is unreachable".to_string(),
-                                _ => format!("IO error: {}", io_err),
-                            },
-                            None => e.to_string(),
-                        };
-                        tracing::warn!("Attempt {} failed: {}. Retrying...", attempts, err_msg);
-                        if attempts == max_handshake_attempts {
-                            tracing::error!("Failed to handshake with {} after {} attempts \n
-                            ", peer, attempts);
+            let peer = peer.clone();
+            let task = tokio::spawn(async move {
+                let mut attempts = 0;
+                while attempts < max_handshake_attempts {
+                    tracing::info!("Attempting handshake with peer: {}", peer);
+                    match try_handshake(&peer).await {
+                        Ok(()) => return Ok(()),
+                        Err(e) => {
+                            attempts += 1;
+                            let err_msg = match e.downcast_ref::<Error>() {
+                                Some(io_err) => match io_err.kind() {
+                                    ErrorKind::ConnectionRefused => "Connection refused".to_string(),
+                                    ErrorKind::ConnectionReset => "Connection reset by peer".to_string(),
+                                    ErrorKind::TimedOut => "Connection timed out".to_string(),
+                                    ErrorKind::NetworkUnreachable => "Network is unreachable".to_string(),
+                                    _ => format!("IO error: {}", io_err),
+                                },
+                                None => e.to_string(),
+                            };
+                            tracing::warn!("Attempt {} failed: {}. Retrying...", attempts, err_msg);
+                            if attempts == max_handshake_attempts {
+                                tracing::error!("Failed to handshake with {} after {} attempts", peer, attempts);
+                                return Err(anyhow::anyhow!("Failed to handshake with {}", peer));
+                            }
+                            tokio::time::sleep(Duration::from_secs(1)).await;
                         }
-                        std::thread::sleep(Duration::from_secs(2));
                     }
                 }
-            }
+                Ok(())
+            });
+            tasks.push(task);
         }
+
+        // Wait for all tasks to complete and collect results
+        for task in tasks {
+            task.await??; // Propagate errors from tasks
+        }
+
         Ok(())
     }
-
 }
