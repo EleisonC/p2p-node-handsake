@@ -9,6 +9,10 @@ use crate::{
     NODE_NETWORK, NODE_WITNESS, NODE_NETWORK_LIMITED
 };
 
+/// Creates a `version` message for the Bitcoin Testnet3 handshake.
+/// This message starts the connection by sharing the node's protocol version,
+/// supported services (e.g., witness support), network address, and other details.
+/// It is the first message sent to a peer to negotiate the connection.
 pub fn create_version_message(
     target_node: &str,
     start_height: i32,
@@ -53,7 +57,7 @@ pub fn create_version_message(
     let checksum = calculate_checksum(&payload);
     Ok(Message {
         magic: TESTNET_MAGIC,
-        command: "version".to_string(),
+        command: String::from("version"),
         payload,
         checksum,
     })
