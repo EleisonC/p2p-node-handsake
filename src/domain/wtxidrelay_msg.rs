@@ -10,7 +10,7 @@ pub fn create_wtxidrelay_message() -> Message {
     let checksum = calculate_checksum(&payload);
     Message {
         magic: TESTNET_MAGIC,
-        command: String::from("wtxidrelay"),
+        command: "wtxidrelay".to_owned(),
         payload,
         checksum,
     }

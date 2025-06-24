@@ -57,7 +57,7 @@ pub fn create_version_message(
     let checksum = calculate_checksum(&payload);
     Ok(Message {
         magic: TESTNET_MAGIC,
-        command: String::from("version"),
+        command: "version".to_owned(),
         payload,
         checksum,
     })

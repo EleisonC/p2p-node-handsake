@@ -10,7 +10,7 @@ pub fn create_verack_message() -> Message {
     let checksum = calculate_checksum(&payload);
     Message {
         magic: TESTNET_MAGIC,
-        command: String::from("verack"),
+        command: "verack".to_owned(),
         payload,
         checksum,
     }
